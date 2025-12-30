@@ -1,0 +1,14 @@
+<label for=\"profiles\"> Select a job profile: </label>
+<select name="profiles">
+    {% for p in profiles %}
+    <option value="{{ p[1] }}"> {{ p[0] }} </option>
+    {% endfor %}
+</select>
+<br \>
+<br \>
+<label for=\"jupyter_environments\"> Select an environment: </label>
+<select name="jupyter_environments">
+    {% for k, e in jupyter_environments.items() %}
+    <option value="{{ k }}"> {{ e.description }} </option>
+    {% endfor %}
+</select>
