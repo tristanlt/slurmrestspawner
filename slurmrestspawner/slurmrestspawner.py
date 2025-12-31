@@ -406,6 +406,7 @@ class SlurmRestSpawner(Spawner):
 
     async def start(self):
         """Start the process"""
+        self.ip = "0.0.0.0"
         # get a random port and cross finders that this port isn't used on node ;)
         self.port = random.randrange(49152, 65535)
 
