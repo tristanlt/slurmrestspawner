@@ -62,7 +62,8 @@ class SlurmRestSpawner(Spawner):
 
     profiles = List(
         [
-        ('Default Job', 'default-job', dict(cpus_per_task = 1, memory_per_node = 4000, time_limit = 480, partition = 'cpu')),
+        ('Default Job', 'default-job', dict(cpus_per_task = 1, memory_per_node = { "number": 4000}, time_limit = 480, partition = 'cpu')),
+        ('GPU Job', 'gpu-job', dict(cpus_per_task = 8, memory_per_node = { "number": 32000}, time_limit = 480, partition = 'gpu', tres_per_job="gres/gpu:1"))
         ],
         help="Profiles (ressources for job) available to user."
     ).tag(config=True)
@@ -244,16 +245,13 @@ class SlurmRestSpawner(Spawner):
                 "current_working_directory": f"{self.job_working_path_prefix}/{self.user.name}",
                 "script": script,
                 "environment": jhub_envs + [f"JUPYTERHUB_SINGLEUSER_PORT={port}"],
-                "partition": profile["partition"],
-                "tasks": 1,
-                "cpus_per_task": profile["cpus_per_task"],
-                "memory_per_node": {
-                    "set": True,
-                    "number": profile["memory_per_node"]
-                },
-                "time_limit": profile["time_limit"]
+                "tasks": 1
             }
         }
+
+        job_data['job'] = job_data['job'] | profile
+
+        self.log.debug(job_data)
 
         response = requests.post(url,
                                 headers=headers,
