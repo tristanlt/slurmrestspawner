@@ -24,6 +24,7 @@ class JobStatus(Enum):
     NOTFOUND = 0
     FAILED = 0
     CANCELLED = 0
+    COMPLETED = 0
     RUNNING = 1
     PENDING = 2
     UNKNOWN = 3
@@ -58,6 +59,11 @@ class SlurmRestSpawner(Spawner):
     options_form_template = Unicode(
         F"{Path(__file__).resolve().parent}/default_options_form.j2",
         help="Absolute path for options_form template"
+    ).tag(config=True)
+
+    job_script_template = Unicode(
+        F"{Path(__file__).resolve().parent}/default_job_script.j2",
+        help="Absolute path for job script template"
     ).tag(config=True)
 
     profiles = List(
@@ -180,43 +186,28 @@ class SlurmRestSpawner(Spawner):
         Returns:
             str: job script
         """
-        selected_jupyter_environment = self._selected_jupyter_environments()
 
-        script = []
-        script.append("#!/bin/bash")
+        search_path = os.path.dirname(os.path.abspath(self.job_script_template))
+        template_name = os.path.basename(self.job_script_template)
 
-        try:
-            script_prologue_template = Environment(loader=BaseLoader).from_string(
-                selected_jupyter_environment['script_prologue_template']
-                )
-            context = { "env": selected_jupyter_environment,
-                        "username": self.user.name }
-            prologue = script_prologue_template.render(**context)
-            script.append("echo 'Start prologue'")
-            script.append(prologue)
-            script.append("echo 'End prologue'")
-        except:
-            self.log.error("Failed prologue templating")
+        loader = FileSystemLoader(search_path)
+        env = Environment(loader=loader, autoescape=True)
 
-        if "path" in selected_jupyter_environment.keys():
-            if selected_jupyter_environment['path']:
-                command_path = f"export PATH=$PATH:{selected_jupyter_environment['path']}"
-                script.append(command_path)
-
-        if "modules" in selected_jupyter_environment.keys():
-            if selected_jupyter_environment['modules']:
-                command_modules = f"module purge\nmodule load {selected_jupyter_environment['modules']}"
-                script.append(command_modules)
-
-        command = f"{self.cmd} {" ".join(self.args)}"
-        if "image" in selected_jupyter_environment.keys():
-            if selected_jupyter_environment['image']:
-                command = f"apptainer run {selected_jupyter_environment['image']} {" ".join(self.cmd)} {" ".join(self.args)}"
-        script.append(command)
-
-        self.log.debug(f"Generated script {"\n".join(script)}")
-        return "\n".join(script)
-
+        template = env.get_template(template_name)
+        context = { "spawner": self,
+                    "selected_jupyter_environment": self._selected_jupyter_environments()
+                }
+        self.log.debug(template.render(**context))
+        return template.render(**context)
+        # try:
+        #     script_prologue_template = Environment(loader=BaseLoader).from_string(
+        #         selected_jupyter_environment['script_prologue_template']
+        #         )
+        #     context = { "env": selected_jupyter_environment,
+        #                 "username": self.user.name }
+        #     prologue = script_prologue_template.render(**context)
+        # except:
+        #     self.log.error("Failed prologue templating")
 
     async def submit_batch_script(self, port):
         """submit batch to SLURM Rest API
@@ -300,6 +291,9 @@ class SlurmRestSpawner(Spawner):
         elif "CANCELLED" in data['jobs'][0]['job_state']:
             self.job_status = "FAILED"
             return JobStatus.CANCELLED
+        elif "COMPLETED" in data['jobs'][0]['job_state']:
+            self.job_status = "COMPLETED"
+            return JobStatus.COMPLETED
         else:
             self.job_status = "UNKNOWN"
             return JobStatus.UNKNOWN

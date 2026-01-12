@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# selected_jupyter_environment.script_prologue rendered
+{{ selected_jupyter_environment.script_prologue }}
+
+{% if selected_jupyter_environment.path %}
+echo "Appending custom path {{selected_jupyter_environment.path}} to PATH env var"
+source /etc/profile
+export PATH=$PATH:{{selected_jupyter_environment.path}}
+{% endif %}
+
+# Module section
+{% if selected_jupyter_environment.modules %}
+module purge
+module load {{selected_jupyter_environment.modules}}
+{% endif %}
+
+# Launching {{spawner.cmd}} {{spawner.args}}
+{% if selected_jupyter_environment.image %}
+# Launching {{spawner.cmd|join(' ')}} {{spawner.args|join(' ')}} in image {{selected_jupyter_environment.image}}
+apptainer run {{selected_jupyter_environment.image}} {{spawner.cmd|join(' ')}} {{spawner.args|join(' ')}}
+{% else %}
+# Launching {{spawner.cmd|join(' ')}} {{spawner.args|join(' ')}}
+{{spawner.cmd|join(' ')}} {{spawner.args|join(' ')}}
+{% endif %}
