@@ -57,6 +57,16 @@ class SlurmRestSpawner(Spawner):
         help="Prefix for job working path name, spawner add /login."
     ).tag(config=True)
 
+    job_standard_output_file = Unicode(
+        "jupyterhub-output/slurm-%j.out",
+        help="Job standard output file name (relative to job working path, %j is replaced by job id)"
+    ).tag(config=True)
+
+    job_standard_error_file = Unicode(
+        "jupyterhub-output/slurm-%j.err",
+        help="Job standard error file name (relative to job working path, %j is replaced by job id)"
+    ).tag(config=True)
+
     options_form_template = Unicode(
         F"{Path(__file__).resolve().parent}/default_options_form.j2",
         help="Absolute path for options_form template"
@@ -235,6 +245,8 @@ class SlurmRestSpawner(Spawner):
                 "user_id": self.user.name,
                 "name": f"{self.job_name_prefix}{self.user.name}",
                 "current_working_directory": f"{self.job_working_path_prefix}/{self.user.name}",
+                "standard_output": f"{self.job_working_path_prefix}/{self.user.name}/{self.job_standard_output_file}",
+                "standard_error": f"{self.job_working_path_prefix}/{self.user.name}/{self.job_standard_error_file}",
                 "script": script,
                 "environment": jhub_envs + [f"JUPYTERHUB_SINGLEUSER_PORT={port}"],
                 "tasks": 1
