@@ -25,6 +25,7 @@ class JobStatus(Enum):
     FAILED = 0
     CANCELLED = 0
     COMPLETED = 0
+    OUT_OF_MEMORY = 0
     RUNNING = 1
     PENDING = 2
     UNKNOWN = 3
