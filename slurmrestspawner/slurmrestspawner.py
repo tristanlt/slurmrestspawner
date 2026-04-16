@@ -25,7 +25,6 @@ class JobStatus(Enum):
     FAILED = 0
     CANCELLED = 0
     COMPLETED = 0
-    OUT_OF_MEMORY = 0
     RUNNING = 1
     PENDING = 2
     UNKNOWN = 3
@@ -299,6 +298,9 @@ class SlurmRestSpawner(Spawner):
             self.job_status = "PENDING"
             return JobStatus.PENDING
         elif "FAILED" in data['jobs'][0]['job_state']:
+            self.job_status = "FAILED"
+            return JobStatus.FAILED
+        elif "OUT_OF_MEMORY" in data['jobs'][0]['job_state']:
             self.job_status = "FAILED"
             return JobStatus.FAILED
         elif "CANCELLED" in data['jobs'][0]['job_state']:
