@@ -278,7 +278,7 @@ class SlurmRestSpawner(Spawner):
             self.job_status = ""
             return JobStatus.NOTFOUND
 
-        self.log.debug("Spawner querying job: " + self.job_id)
+        self.log.info("Spawner querying job: " + self.job_id)
         url = f"{self.slurm_rest_api}/job/{self.job_id}"
         headers = {"X-SLURM-USER-TOKEN": self.SLURM_JWT}
         response = requests.get(url,
@@ -339,6 +339,10 @@ class SlurmRestSpawner(Spawner):
         super().load_state(state)
         self.job_id = state.get("job_id", "")
         self.job_status = state.get("job_status", "")
+        self.port = state.get("port", self.port)
+        self.server.port = state.get("port", self.port)
+        self.ip = state.get("ip", self.ip)
+        self.log.info(f"Loaded state for {self.job_id} {self.job_status} on {self.ip}:{self.port}")
 
     def get_state(self):
         """add job_id to state"""
@@ -347,6 +351,10 @@ class SlurmRestSpawner(Spawner):
             state["job_id"] = self.job_id
         if self.job_status:
             state["job_status"] = self.job_status
+        if self.port:
+            state["port"] = self.port
+        if self.ip:
+            state["ip"] = self.ip
         return state
 
     def clear_state(self):
