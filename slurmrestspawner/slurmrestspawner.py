@@ -342,7 +342,6 @@ class SlurmRestSpawner(Spawner):
         self.job_id = state.get("job_id", "")
         self.job_status = state.get("job_status", "")
         self.port = state.get("port", self.port)
-        self.server.port = state.get("port", self.port)
         self.ip = state.get("ip", self.ip)
         self.log.info(f"Loaded state for {self.job_id} {self.job_status} on {self.ip}:{self.port}")
 
@@ -357,6 +356,7 @@ class SlurmRestSpawner(Spawner):
             state["port"] = self.port
         if self.ip:
             state["ip"] = self.ip
+        self.log.info(f"GET STATE {self.job_id} {self.job_status}")
         return state
 
     def clear_state(self):
@@ -408,9 +408,16 @@ class SlurmRestSpawner(Spawner):
     async def poll(self):
         """Poll the process"""
         status = await self.query_job_status()
-        if status in (JobStatus.PENDING, JobStatus.RUNNING, JobStatus.UNKNOWN):
+        self.log.debug(f"status is {status}")
+        if status == JobStatus.RUNNING:
+            if self.server:
+                self.server.port = self.port
+            return None
+        if status in (JobStatus.PENDING, JobStatus.UNKNOWN):
+            self.log.info(f"return {status}")
             return None
         else:
+            self.log.info(f"return {status} clear state")
             self.clear_state()
             return 1
 
